@@ -1,2 +1,4 @@
 pandas
 openpyxl
+xlwings
+pyinstaller

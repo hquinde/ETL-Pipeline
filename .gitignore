@@ -12,3 +12,14 @@ __pycache__/
 # macOS system file
 .DS_Store
 
+# xlwings artifacts
+.xlwings/
+
+# PyInstaller artifacts
+build/
+dist/
+*.spec
+GEMINI.md
+
+
+

@@ -1,8 +1,10 @@
 import pandas as pd
+import xlwings as xw
 
 class Extract:
-    def __init__(self, file_path: str):
-        self.file_path = file_path
+    def __init__(self, workbook: xw.Book, sheet_name: str):
+        self.workbook = workbook
+        self.sheet_name = sheet_name
         self.header_row_index = 1
         self.cols = ("Sample ID", "Sample Type", "Mean (per analysis type)", "PPM", "Adjusted ABS")
 
@@ -12,29 +14,27 @@ class Extract:
         for column in self.cols:
             wanted_columns.add(column.strip())
         
-        def should_include_column(column_name):
-            if column_name.strip() in wanted_columns:
-                return True
-            else:
-                return False
-        
-
-
-        # print statements for debugging
+        # Read the entire sheet into a DataFrame, then filter columns
         try:
-            df = pd.read_excel(
-                self.file_path, 
-                header=self.header_row_index - 1,
-                usecols=should_include_column
-            )
+            # Read all data from the active sheet to allow for column filtering post-read
+            # xlwings reads directly into a DataFrame
+            # header=self.header_row_index - 1 correctly sets the header row
+            df = self.workbook.sheets[self.sheet_name].range('A1').expand().options(
+                pd.DataFrame, 
+                header=self.header_row_index - 1
+            ).value
             
-            print(f"Successfully loaded {len(df)} rows from {self.file_path}")
-            return df
+            # Filter columns after reading
+            actual_columns = [col for col in df.columns if col.strip() in wanted_columns]
+            df = df[actual_columns]
             
-        except FileNotFoundError:
-            print(f"Error: File not found at {self.file_path}")
-            return None
+            if len(df) > 0:
+                xw.apps.active.alert(f"Successfully loaded {len(df)} rows from sheet '{self.sheet_name}'", "ETL Pipeline", True)
+                return df
+            else:
+                xw.apps.active.alert(f"No data found in sheet '{self.sheet_name}'.", "ETL Pipeline Error", True)
+                return None
             
-        except ValueError as error:
-            print(f"Error reading columns: {error}")
+        except Exception as e:
+            xw.apps.active.alert(f"Error extracting data from sheet '{self.sheet_name}': {e}", "ETL Pipeline Error", True)
             return None

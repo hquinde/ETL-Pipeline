@@ -1,22 +1,22 @@
 import pandas as pd
-import shutil
-from openpyxl import load_workbook
-from openpyxl.styles import Font
-from excel_extract import Extract
-from excel_transform import Transform
-
+import xlwings as xw # Added xlwings import
+from openpyxl.styles import Font # openpyxl still needed for styling
+# from excel_extract import Extract # Not directly used here
+# from excel_transform import Transform # Passed via transformer object
 
 class Load:
-    def __init__(self, transformer, input_path, output_path):
+    def __init__(self, transformer, workbook: xw.Book): # Modified init to take workbook
         self.transformer = transformer
-        self.input_path = input_path
-        self.output_path = output_path
+        self.workbook = workbook # Stored workbook object
         self.molecular_weight = 12.01057
 
 
     @staticmethod
     def is_out_of_bounds(value, check_type):
-        val = float(value)
+        try:
+            val = float(value)
+        except (ValueError, TypeError):
+            return False # Cannot convert to float, so not out of bounds
         
         if check_type == 'QC_R':
             return val < 90 or val > 110
@@ -25,7 +25,7 @@ class Load:
         elif check_type == 'RPD':
             return val > 10
         else:
-            return True
+            return False # Default to not out of bounds for unknown check_type
 
 
     def sample_groups(self):
@@ -211,63 +211,48 @@ class Load:
 
 
     def export_all(self):
-        self.prepare_output_file()
-        self.write_sheets()
+        self.write_sheets() # Removed prepare_output_file
         self.apply_formatting()
-        print(f"Export finished: {self.output_path}")
-
-
-    def prepare_output_file(self):
-        """Copies the input Excel file to the specified output path."""
-        try:
-            shutil.copy(self.input_path, self.output_path)
-            print(f"Cloned input file to {self.output_path}")
-        except FileNotFoundError:
-            print(f"Error: Input file not found at {self.input_path}")
-            # Exit or handle the error as needed
-            exit()
-        except Exception as e:
-            print(f"An error occurred while copying the file: {e}")
-            # Exit or handle the error as needed
-            exit()
+        xw.apps.active.alert("Sheets updated and formatted.", "ETL Pipeline", True) # Changed print
 
 
     def write_sheets(self):
-        sheets = {
+        sheets_to_write = {
             "QC": self.format_qc(),
             "Samples": self.format_samples(),
             "Reported Results": self.format_reported_results(),
         }
 
-        with pd.ExcelWriter(
-            self.output_path, 
-            engine='openpyxl', 
-            mode='a', 
-            if_sheet_exists='replace'
-        ) as writer:
-            for sheet_name, df in sheets.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-                print(f"Wrote {len(df)} rows to sheet '{sheet_name}'")
+        for sheet_name, df in sheets_to_write.items():
+            # Check if sheet exists, if so, clear it, otherwise add it
+            if sheet_name in [sheet.name for sheet in self.workbook.sheets]:
+                ws = self.workbook.sheets[sheet_name]
+                ws.clear_contents()
+            else:
+                ws = self.workbook.sheets.add(sheet_name)
+            
+            # Write DataFrame to sheet
+            ws.range('A1').options(index=False, header=True).value = df
+            xw.apps.active.alert(f"Wrote {len(df)} rows to sheet '{sheet_name}'", "ETL Pipeline", True)
 
 
     def apply_formatting(self):
-        wb = load_workbook(self.output_path)
-        red_font = Font(color='FF0000', bold=True)
+        red_font_color = (255, 0, 0) # RGB for red
         
-        self.format_qc_sheet(wb, red_font)
-        self.format_samples_sheet(wb, red_font)
+        self.format_qc_sheet(red_font_color)
+        self.format_samples_sheet(red_font_color)
         
-        wb.save(self.output_path)
-        print(f"Applied bounds checking and formatting")
+        xw.apps.active.alert("Applied bounds checking and formatting", "ETL Pipeline", True) # Changed print
 
 
-    def format_qc_sheet(self, wb, red_font):
-        ws = wb['QC']
-        for row_idx in range(2, ws.max_row + 1):
-            sample_id_cell = ws.cell(row=row_idx, column=1)
+    def format_qc_sheet(self, red_font_color):
+        ws = self.workbook.sheets['QC']
+        # Assuming header is 1st row, data starts from 2nd
+        for row_idx in range(2, ws.api.UsedRange.Rows.Count + 1): # Iterate over used range
+            sample_id_cell = ws.range((row_idx, 1)) # A column
             sample_id = sample_id_cell.value
             
-            r_cell = ws.cell(row=row_idx, column=4)
+            r_cell = ws.range((row_idx, 4)) # D column
             if r_cell.value is not None:
                 if sample_id and 'MDL' in str(sample_id).upper():
                     check_type = 'MDL_R'
@@ -275,13 +260,14 @@ class Load:
                     check_type = 'QC_R'
                 
                 if self.is_out_of_bounds(r_cell.value, check_type):
-                    r_cell.font = red_font
+                    r_cell.api.Font.Color = red_font_color
 
 
-    def format_samples_sheet(self, wb, red_font):
-        ws = wb['Samples']
-        for row_idx in range(2, ws.max_row + 1):
-            rpd_cell = ws.cell(row=row_idx, column=4)
+    def format_samples_sheet(self, red_font_color):
+        ws = self.workbook.sheets['Samples']
+        # Assuming header is 1st row, data starts from 2nd
+        for row_idx in range(2, ws.api.UsedRange.Rows.Count + 1): # Iterate over used range
+            rpd_cell = ws.range((row_idx, 4)) # D column
             if rpd_cell.value is not None:
                 if self.is_out_of_bounds(rpd_cell.value, 'RPD'):
-                    rpd_cell.font = red_font
+                    rpd_cell.api.Font.Color = red_font_color

@@ -1,4 +1,5 @@
 import pandas as pd
+import shutil
 from openpyxl import load_workbook
 from openpyxl.styles import Font
 from excel_extract import Extract
@@ -6,9 +7,10 @@ from excel_transform import Transform
 
 
 class Load:
-    def __init__(self, transformer):
+    def __init__(self, transformer, input_path, output_path):
         self.transformer = transformer
-        self.output_path = "output_files/results.xlsx"
+        self.input_path = input_path
+        self.output_path = output_path
         self.molecular_weight = 12.01057
 
 
@@ -209,9 +211,25 @@ class Load:
 
 
     def export_all(self):
+        self.prepare_output_file()
         self.write_sheets()
         self.apply_formatting()
         print(f"Export finished: {self.output_path}")
+
+
+    def prepare_output_file(self):
+        """Copies the input Excel file to the specified output path."""
+        try:
+            shutil.copy(self.input_path, self.output_path)
+            print(f"Cloned input file to {self.output_path}")
+        except FileNotFoundError:
+            print(f"Error: Input file not found at {self.input_path}")
+            # Exit or handle the error as needed
+            exit()
+        except Exception as e:
+            print(f"An error occurred while copying the file: {e}")
+            # Exit or handle the error as needed
+            exit()
 
 
     def write_sheets(self):
@@ -221,7 +239,12 @@ class Load:
             "Reported Results": self.format_reported_results(),
         }
 
-        with pd.ExcelWriter(self.output_path, engine='openpyxl') as writer:
+        with pd.ExcelWriter(
+            self.output_path, 
+            engine='openpyxl', 
+            mode='a', 
+            if_sheet_exists='replace'
+        ) as writer:
             for sheet_name, df in sheets.items():
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
                 print(f"Wrote {len(df)} rows to sheet '{sheet_name}'")

@@ -8,7 +8,6 @@ class Transform:
 
     def clean_data(self):
         cleaned = self.df[self.df["Sample Type"] == "Samples"]
-        print(f"Cleaned data: {len(cleaned)} samples remaining")
         return cleaned
 
 

@@ -1,10 +1,4 @@
-import sys
-from pathlib import Path
 import xlwings as xw
-
-# Add the 'code' directory to the Python path
-sys.path.insert(0, str(Path(__file__).parent / "code"))
-
 from excel_extract import Extract
 from excel_transform import Transform
 from excel_load import Load

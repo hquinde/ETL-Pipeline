@@ -20,6 +20,9 @@ build/
 dist/
 *.spec
 GEMINI.md
+CLAUDE.md
+
+
 
 
 

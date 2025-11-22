@@ -8,6 +8,22 @@ This is an ETL (Extract, Transform, Load) pipeline for processing Excel laborato
 
 **Critical Context:** This is a **hybrid Excel Add-in application** designed for offline lab computers. It provides a "one-button" solution directly within Excel, requiring no Python installation on end-user machines.
 
+## Current Status
+
+**Completed on macOS:**
+- ✅ Python code refactored from CLI to xlwings Excel integration
+- ✅ All modules moved to root directory for PyInstaller compatibility
+- ✅ macOS executable built successfully (29MB, all dependencies included)
+- ✅ Code tested with real lab data and confirmed working
+- ✅ Project structure cleaned and documented
+
+**Pending on Windows:**
+- ⏳ Build Windows executable (`ETL_Processor.exe`)
+- ⏳ Create VBA macro in Excel to call the executable
+- ⏳ Test full workflow with macro button in Excel
+- ⏳ Package as `.xlam` add-in file
+- ⏳ Deploy to lab computers
+
 ## Environment Setup
 
 **Python Version:** Python 3.13 (uses `.venv` virtual environment)
@@ -72,18 +88,18 @@ This project uses a **two-part architecture** designed for offline lab computers
 
 The pipeline follows a classic three-stage ETL architecture with class-based separation of concerns:
 
-1. **Extract** (`code/excel_extract.py`):
+1. **Extract** (`excel_extract.py`):
    - Reads data from the active Excel sheet using xlwings
    - Filters specific columns: "Sample ID", "Sample Type", "Mean (per analysis type)", "PPM", "Adjusted ABS"
    - Returns a pandas DataFrame
 
-2. **Transform** (`code/excel_transform.py`):
+2. **Transform** (`excel_transform.py`):
    - Filters samples by type ("Samples" only)
    - Groups data by Sample ID
    - Calculates analytical metrics: mean PPM, RPD (Relative Percent Difference), percent recovery (%R)
    - Converts PPM to µmol/L using molecular weight (12.01057 for carbon)
 
-3. **Load** (`code/excel_load.py`):
+3. **Load** (`excel_load.py`):
    - Orchestrates final transformation and formatting
    - Creates three output sheets: "QC", "Samples", "Reported Results"
    - Applies conditional formatting (red text for out-of-bounds values)
@@ -157,14 +173,16 @@ Molecular weight for carbon: 12.01057
 
 ### Building the Executable
 
-**macOS (for testing):**
+**macOS (for testing - completed):**
 ```bash
 source .venv/bin/activate
 pyinstaller --onefile --name ETL_Processor ETL_Addin.py
 ```
 Creates: `dist/ETL_Processor` (macOS executable)
 
-**Windows (for lab deployment):**
+**Note:** xlwings has limited VBA macro support on macOS. The macOS build is for verifying the PyInstaller packaging works correctly, but full Excel integration testing should be done on Windows.
+
+**Windows (for lab deployment - PENDING):**
 ```bash
 # On Windows machine with Python 3.13 and dependencies installed
 pyinstaller --onefile --name ETL_Processor ETL_Addin.py
@@ -173,11 +191,33 @@ Creates: `dist/ETL_Processor.exe` (Windows 64-bit executable)
 
 **IMPORTANT:** All Python modules (`excel_extract.py`, `excel_transform.py`, `excel_load.py`) must be in the same directory as `ETL_Addin.py`. PyInstaller cannot follow dynamic path modifications (like `sys.path.insert`), so keeping all modules in the root directory ensures they are automatically included.
 
-### Creating the Excel Add-in
+### Creating the Excel Add-in (Windows)
 
+**Step 1: Create the VBA Macro**
 1. Open `ETL_Addin.xlsm` in Excel
-2. Update VBA macro to call `ETL_Processor.exe`
-3. Save as "Excel Add-in" (`.xlam` format)
+2. Enable the Developer tab (File → Options → Customize Ribbon → check Developer)
+3. Click Developer → Insert → Button (Form Control)
+4. Draw a button on the sheet
+5. When prompted, create a new macro named `RunETLPipeline`
+6. In the VBA editor, add this code:
+```vba
+Sub RunETLPipeline()
+    ' Path to the ETL_Processor.exe (update as needed)
+    Dim exePath As String
+    exePath = "C:\Path\To\ETL_Processor.exe"
+
+    ' Run the executable
+    Shell exePath, vbNormalFocus
+End Sub
+```
+
+**Step 2: Save as Excel Add-in**
+1. File → Save As
+2. Choose "Excel Add-in (*.xlam)" format
+3. Save to a permanent location
+
+**Alternative (simpler for testing):**
+Keep using `ETL_Addin.xlsm` during development, only create `.xlam` when ready to deploy.
 
 ### Deployment to Lab Computers
 

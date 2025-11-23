@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="LabToolsTab" label="Lab Tools">
+        <group id="ETLGroup" label="Data Processing">
+          <button id="ProcessDataBtn"
+                  label="Process Data"
+                  size="large"
+                  onAction="ProcessData"
+                  imageMso="DatabaseTableAnalyze" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

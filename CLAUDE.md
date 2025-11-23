@@ -10,19 +10,23 @@ This is an ETL (Extract, Transform, Load) pipeline for processing Excel laborato
 
 ## Current Status
 
-**Completed on macOS:**
+**Development Complete - Ready for Lab Deployment:**
 - ✅ Python code refactored from CLI to xlwings Excel integration
 - ✅ All modules moved to root directory for PyInstaller compatibility
-- ✅ macOS executable built successfully (29MB, all dependencies included)
-- ✅ Code tested with real lab data and confirmed working
-- ✅ Project structure cleaned and documented
+- ✅ Windows executable built successfully (`dist/ETL_Processor.exe`, ~29MB)
+- ✅ Code tested with real lab data and confirmed working on Windows
+- ✅ Bounds checking working correctly (MDL: 45-145%, ICV/CCV: 90-110%, RPD: ≤10%)
+- ✅ Index column removed from output sheets
+- ✅ VBA macro created (`ProcessData.vba`)
+- ✅ Deployment documentation complete (`DEPLOYMENT_GUIDE.md`)
+- ✅ All functionality verified and working
 
-**Pending on Windows:**
-- ⏳ Build Windows executable (`ETL_Processor.exe`)
-- ⏳ Create VBA macro in Excel to call the executable
-- ⏳ Test full workflow with macro button in Excel
-- ⏳ Package as `.xlam` add-in file
-- ⏳ Deploy to lab computers
+**Pending Lab Deployment:**
+- ⏳ Add VBA macro to `ETL_Addin.xlsm`
+- ⏳ Save as `ETL_Addin.xlam` add-in file
+- ⏳ Add "Process Data" button to custom ribbon tab
+- ⏳ Copy `ETL_Processor.exe` to `%APPDATA%\ETL_Pipeline\` on each lab computer
+- ⏳ Install `.xlam` add-in on each lab computer
 
 ## Environment Setup
 
@@ -182,48 +186,60 @@ Creates: `dist/ETL_Processor` (macOS executable)
 
 **Note:** xlwings has limited VBA macro support on macOS. The macOS build is for verifying the PyInstaller packaging works correctly, but full Excel integration testing should be done on Windows.
 
-**Windows (for lab deployment - PENDING):**
+**Windows (for lab deployment - COMPLETED):**
 ```bash
-# On Windows machine with Python 3.13 and dependencies installed
-pyinstaller --onefile --name ETL_Processor ETL_Addin.py
+.venv\Scripts\pyinstaller.exe --onefile --name ETL_Processor --clean ETL_Addin.py
 ```
-Creates: `dist/ETL_Processor.exe` (Windows 64-bit executable)
+Creates: `dist\ETL_Processor.exe` (Windows 64-bit executable, ~29MB)
 
 **IMPORTANT:** All Python modules (`excel_extract.py`, `excel_transform.py`, `excel_load.py`) must be in the same directory as `ETL_Addin.py`. PyInstaller cannot follow dynamic path modifications (like `sys.path.insert`), so keeping all modules in the root directory ensures they are automatically included.
 
+**Build Status:** ✅ Successfully built and tested on Windows with real lab data.
+
 ### Creating the Excel Add-in (Windows)
 
-**Step 1: Create the VBA Macro**
-1. Open `ETL_Addin.xlsm` in Excel
-2. Enable the Developer tab (File → Options → Customize Ribbon → check Developer)
-3. Click Developer → Insert → Button (Form Control)
-4. Draw a button on the sheet
-5. When prompted, create a new macro named `RunETLPipeline`
-6. In the VBA editor, add this code:
-```vba
-Sub RunETLPipeline()
-    ' Path to the ETL_Processor.exe (update as needed)
-    Dim exePath As String
-    exePath = "C:\Path\To\ETL_Processor.exe"
+**Complete deployment instructions are available in `DEPLOYMENT_GUIDE.md`**
 
-    ' Run the executable
-    Shell exePath, vbNormalFocus
-End Sub
-```
+**Quick Summary:**
 
-**Step 2: Save as Excel Add-in**
-1. File → Save As
-2. Choose "Excel Add-in (*.xlam)" format
-3. Save to a permanent location
+1. **Add VBA Macro** (code available in `ProcessData.vba`):
+   - Open `ETL_Addin.xlsm` → Press `Alt+F11`
+   - Insert → Module
+   - Paste the ProcessData macro
+   - Macro expects executable at: `%APPDATA%\ETL_Pipeline\ETL_Processor.exe`
 
-**Alternative (simpler for testing):**
-Keep using `ETL_Addin.xlsm` during development, only create `.xlam` when ready to deploy.
+2. **Save as Excel Add-in**:
+   - File → Save As → Choose "Excel Add-in (*.xlam)"
+   - Excel will suggest the AddIns folder - accept this location
+   - Name it `ETL_Addin.xlam`
+
+3. **Add Custom Ribbon Button** (no internet required):
+   - File → Options → Customize Ribbon
+   - Create new tab "Lab Tools"
+   - Add "ProcessData" macro to the tab
+   - This creates a permanent button available in all Excel files
+
+**For detailed step-by-step instructions, see `DEPLOYMENT_GUIDE.md`**
 
 ### Deployment to Lab Computers
 
-Distribute two files:
-1. `ETL_Processor.exe` - Copy to a permanent location on the lab computer
-2. `ETL_Addin.xlam` - Install via Excel's Add-in Manager
+**Installation Location (no admin rights required):**
+```
+%APPDATA%\ETL_Pipeline\ETL_Processor.exe
+```
+
+**Files to Deploy:**
+1. `dist\ETL_Processor.exe` → Copy to `%APPDATA%\ETL_Pipeline\` on each lab computer
+2. `ETL_Addin.xlam` → Install via Excel's Add-in Manager (File → Options → Add-ins)
+
+**Key Constraints Addressed:**
+- ✅ No internet required (offline lab computers)
+- ✅ No Python installation needed (standalone executable)
+- ✅ No admin rights required (user-level %APPDATA% installation)
+- ✅ Works on shared computers (user-specific installation)
+- ✅ Native Excel interface (custom ribbon button)
+
+**See `DEPLOYMENT_GUIDE.md` for complete deployment instructions.**
 
 **Note:** The `.gitignore` excludes build artifacts (`dist/`, `build/`, `*.spec`, `.xlwings/`) from version control.
 
@@ -250,10 +266,14 @@ This codebase was **refactored from a file-based CLI tool** to the current Excel
 
 2. **In-place Updates**: The Load class writes output sheets directly back to the calling workbook, not to separate files. If sheets exist, they are cleared and reused.
 
-3. **Conditional Formatting**: Applied programmatically via `ws.api.Font.Color` for out-of-bounds values (red text), enabling real-time highlighting without saving/reopening.
+3. **Conditional Formatting**: Applied programmatically via `r_cell.font.color` (xlwings font property) for out-of-bounds values (red text), enabling real-time highlighting without saving/reopening. Uses RGB tuple format `(255, 0, 0)` for red text.
 
 4. **Data Grouping**: Maintains insertion order when grouping samples to preserve the original sequence from the input data.
 
 5. **String Matching**: Sample IDs are stripped of whitespace and matched using regex patterns (case-insensitive for QC samples).
 
 6. **No File I/O**: The `input_files/` and `output_files/` directories are legacy - the codebase no longer uses them.
+
+7. **Index Column Removal**: DataFrames are written to Excel using `ws.range('A1').options(index=False).value = df` to exclude unnecessary row index numbers from output sheets.
+
+8. **Error Logging**: All errors are logged to `etl_error.log` in the same directory as the executable for troubleshooting in production environments.

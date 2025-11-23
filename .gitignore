@@ -19,8 +19,10 @@ __pycache__/
 build/
 dist/
 *.spec
-GEMINI.md
+# Claude Code artifacts
+.claude/
 CLAUDE.md
+GEMINI.md
 
 
 

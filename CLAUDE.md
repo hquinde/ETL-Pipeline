@@ -228,10 +228,6 @@ Creates: `dist\ETL_Processor.exe` (Windows 64-bit executable, ~29MB)
 %APPDATA%\ETL_Pipeline\ETL_Processor.exe
 ```
 
-**Files to Deploy:**
-1. `dist\ETL_Processor.exe` → Copy to `%APPDATA%\ETL_Pipeline\` on each lab computer
-2. `ETL_Addin.xlam` → Install via Excel's Add-in Manager (File → Options → Add-ins)
-
 **Key Constraints Addressed:**
 - ✅ No internet required (offline lab computers)
 - ✅ No Python installation needed (standalone executable)
@@ -239,7 +235,126 @@ Creates: `dist\ETL_Processor.exe` (Windows 64-bit executable, ~29MB)
 - ✅ Works on shared computers (user-specific installation)
 - ✅ Native Excel interface (custom ribbon button)
 
-**See `DEPLOYMENT_GUIDE.md` for complete deployment instructions.**
+## USB Transfer and Lab Deployment Process
+
+### Files to Copy to USB Drive
+
+Transfer these files from the Windows development machine to USB:
+
+1. **`dist\ETL_Processor.exe`** (~29MB) - The standalone executable
+2. **`ETL_Addin.xlsm`** - The Excel file with VBA macro (or `ETL_Addin.xlam` if already created)
+3. **`DEPLOYMENT_GUIDE.md`** - Step-by-step deployment instructions
+4. **`ProcessData.vba`** (optional) - VBA code for reference
+
+### Lab Computer Setup Procedure
+
+Perform these steps on each lab computer:
+
+#### Step 1: Install the Python Executable
+
+1. Navigate to `%APPDATA%` folder:
+   - Press `Win+R`
+   - Type `%APPDATA%` and press Enter
+   - Creates path like: `C:\Users\[Username]\AppData\Roaming\`
+
+2. Create the ETL Pipeline folder:
+   - Right-click → New → Folder
+   - Name it: `ETL_Pipeline`
+
+3. Copy the executable:
+   - Copy `ETL_Processor.exe` from USB into `%APPDATA%\ETL_Pipeline\`
+   - Final path should be: `%APPDATA%\ETL_Pipeline\ETL_Processor.exe`
+
+#### Step 2: Create the Excel Add-in (First Time Only)
+
+If you haven't created the `.xlam` file yet:
+
+1. **Add the VBA Macro:**
+   - Copy `ETL_Addin.xlsm` from USB to Desktop
+   - Open `ETL_Addin.xlsm` in Excel
+   - Press `Alt+F11` to open VBA Editor
+   - Insert → Module
+   - Copy contents from `ProcessData.vba` and paste into the module
+   - Save and close VBA Editor
+
+2. **Save as Add-in:**
+   - File → Save As
+   - Change "Save as type" to "Excel Add-in (*.xlam)"
+   - Excel will suggest the AddIns folder - accept this location
+   - Name it: `ETL_Addin.xlam`
+   - Click Save
+
+3. **Copy `.xlam` to USB:**
+   - Navigate to the AddIns folder (typically `%APPDATA%\Microsoft\AddIns\`)
+   - Copy `ETL_Addin.xlam` back to USB
+   - You can now use this `.xlam` file on all other lab computers
+
+#### Step 3: Install the Excel Add-in
+
+1. **Enable the Add-in:**
+   - Open Excel
+   - File → Options → Add-ins
+   - At the bottom, select "Excel Add-ins" from dropdown → Click "Go..."
+   - Click "Browse..."
+   - Navigate to USB drive and select `ETL_Addin.xlam`
+   - Click OK
+   - Check the box next to "ETL_Addin" in the list
+   - Click OK
+
+2. **Add the Ribbon Button:**
+   - File → Options → Customize Ribbon
+   - In the right panel, click "New Tab"
+   - Rename the tab to "Lab Tools"
+   - Select "New Group (Custom)" under Lab Tools
+   - Rename it to "Data Processing"
+   - In the left panel, choose "Macros" from dropdown
+   - Select "ProcessData" macro
+   - Click "Add >>"
+   - Click "Rename..." to customize the button text (optional)
+   - Click OK
+
+#### Step 4: Test the Installation
+
+1. Open a raw data Excel file
+2. Look for the "Lab Tools" ribbon tab
+3. Click the "Process Data" button
+4. Verify that:
+   - Three new sheets appear: "QC", "Samples", "Reported Results"
+   - Out-of-bounds values are highlighted in red
+   - A completion message pop-up appears
+
+### Deployment Checklist
+
+Use this checklist to track deployment across multiple lab computers:
+
+```
+Computer Name: ____________  Date: __________
+[ ] Step 1: ETL_Processor.exe copied to %APPDATA%\ETL_Pipeline\
+[ ] Step 2: ETL_Addin.xlam installed via Add-ins Manager
+[ ] Step 3: "Lab Tools" ribbon tab created
+[ ] Step 4: "Process Data" button added to ribbon
+[ ] Step 5: Tested with sample data file
+[ ] Step 6: Verified all three output sheets generate correctly
+[ ] Step 7: Confirmed conditional formatting (red highlights) works
+
+Notes: _________________________________________________
+```
+
+### Troubleshooting
+
+**Error: "Cannot run the macro..."**
+- Ensure `ETL_Processor.exe` is at: `%APPDATA%\ETL_Pipeline\ETL_Processor.exe`
+- Verify the path in the VBA macro matches this location
+
+**Error: "Python script failed"**
+- Check `etl_error.log` in the same folder as `ETL_Processor.exe`
+- Verify the input data has the required columns: "Sample ID", "Sample Type", "Mean (per analysis type)", "PPM", "Adjusted ABS"
+
+**Ribbon button doesn't appear:**
+- Verify the add-in is enabled: File → Options → Add-ins
+- Check that the macro is assigned to the ribbon button: File → Options → Customize Ribbon
+
+**See `DEPLOYMENT_GUIDE.md` for detailed troubleshooting steps.**
 
 **Note:** The `.gitignore` excludes build artifacts (`dist/`, `build/`, `*.spec`, `.xlwings/`) from version control.
 

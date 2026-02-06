@@ -148,7 +148,16 @@ python ETL_Addin.py
 # 1. Open ETL_Addin.xlsm in Excel
 # 2. Run the VBA macro that calls main()
 # 3. The ETL pipeline processes the active sheet
+# 4. Use test files in test_data/ for validation
 ```
+
+## Documentation Overview
+
+- **README.md**: High-level overview for recruiters and stakeholders (this file)
+- **CLAUDE.md**: Quick reference for active development (commands, constraints, QC thresholds)
+- **ARCHITECTURE.md**: Technical deep dive into ETL pipeline flow, formulas, and design decisions
+- **DEPLOYMENT_GUIDE.md**: Step-by-step lab deployment, USB preparation, and troubleshooting
+- **test_data/**: Sample Excel files from actual lab instruments for validation
 
 ## Building for Production
 
@@ -169,6 +178,8 @@ pyinstaller --onefile --name ETL_Processor ETL_Addin.py
 ```
 
 **Critical:** All modules must be in root directory for PyInstaller auto-discovery. The `sys.path.insert()` pattern doesn't work with PyInstaller's static analysis.
+
+**For complete deployment instructions**, including USB transfer, VBA macro setup, and lab computer installation, see `DEPLOYMENT_GUIDE.md`.
 
 ### Excel Add-in Creation
 
@@ -266,15 +277,20 @@ chemistry_profiles = {
 
 ```
 ETL-Pipeline/
-├── ETL_Addin.py           # Main entry point with xlwings integration
-├── excel_extract.py       # Extract layer: Excel → DataFrame
-├── excel_transform.py     # Transform layer: Data cleaning & calculations
-├── excel_load.py          # Load layer: Formatting & output
-├── ETL_Addin.xlsm         # Development Excel file with VBA macro
-├── requirements.txt       # Python dependencies
-├── CLAUDE.md              # Detailed implementation guide for AI assistants
-├── .gitignore             # Excludes venv, build artifacts, Excel temp files
-└── dist/                  # PyInstaller output (ignored in git)
-    └── ETL_Processor      # Standalone executable
+├── ETL_Addin.py              # Main entry point with xlwings integration
+├── excel_extract.py          # Extract layer: Excel → DataFrame
+├── excel_transform.py        # Transform layer: Data cleaning & calculations
+├── excel_load.py             # Load layer: Formatting & output
+├── ETL_Addin.xlsm            # Development Excel file with VBA macro
+├── ProcessData.vba           # VBA macro code for Excel Add-in
+├── requirements.txt          # Python dependencies
+├── README.md                 # This file (recruiter-focused overview)
+├── CLAUDE.md                 # Quick reference guide for developers
+├── ARCHITECTURE.md           # Technical details: ETL flow, formulas, QC thresholds
+├── DEPLOYMENT_GUIDE.md       # Lab deployment: USB transfer, installation, troubleshooting
+├── test_data/                # Sample Excel files from actual lab instruments
+├── .gitignore                # Excludes venv, build artifacts, Excel temp files
+└── dist/                     # PyInstaller output (ignored in git)
+    └── ETL_Processor.exe     # Standalone executable (~29MB)
 ```
 

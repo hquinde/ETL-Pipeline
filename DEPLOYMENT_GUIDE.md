@@ -129,7 +129,30 @@ ETL_Pipeline_Deploy/
 └── INSTALL_INSTRUCTIONS.txt   (installation steps for lab users)
 ```
 
-## Step 5: Deploy to Lab Computers
+## Step 5: USB Transfer Process
+
+For lab computers without network access, prepare a USB drive with the deployment files:
+
+### Files to Copy to USB Drive
+
+Transfer these files from your development machine:
+
+1. **`dist\ETL_Processor.exe`** (~29MB) - The standalone executable
+2. **`ETL_Addin.xlam`** - The Excel Add-in file you created in Step 3
+3. **`DEPLOYMENT_GUIDE.md`** (this file) - Step-by-step deployment instructions
+4. **`ProcessData.vba`** (optional) - VBA code for reference
+
+### USB Folder Structure
+
+```
+USB:\ETL_Pipeline_Deploy\
+├── ETL_Processor.exe
+├── ETL_Addin.xlam
+├── DEPLOYMENT_GUIDE.md
+└── ProcessData.vba (optional)
+```
+
+## Step 6: Deploy to Lab Computers
 
 ### Recommended Installation Path
 
@@ -147,31 +170,119 @@ C:\Users\[Username]\AppData\Roaming\ETL_Pipeline\ETL_Processor.exe
 
 ### Installation Steps for Each Lab Computer
 
-1. **Create the ETL_Pipeline folder:**
+**Step 6.1: Install the Python Executable**
+
+1. Navigate to `%APPDATA%` folder:
    - Press `Win+R`
    - Type `%APPDATA%` and press Enter
-   - Create a new folder named `ETL_Pipeline`
-   - Copy `ETL_Processor.exe` into this folder
+   - Creates path like: `C:\Users\[Username]\AppData\Roaming\`
 
-2. **Install the Excel Add-in:**
+2. Create the ETL Pipeline folder:
+   - Right-click → New → Folder
+   - Name it: `ETL_Pipeline`
+
+3. Copy the executable:
+   - Copy `ETL_Processor.exe` from USB into `%APPDATA%\ETL_Pipeline\`
+   - Final path should be: `%APPDATA%\ETL_Pipeline\ETL_Processor.exe`
+
+**Step 6.2: Install the Excel Add-in**
+
+1. **Enable the Add-in:**
    - Open Excel
    - Go to `File → Options → Add-ins`
    - At the bottom, select "Excel Add-ins" and click "Go..."
    - Click "Browse"
-   - Navigate to where you saved `ETL_Addin.xlam`
-   - Select it and click "OK"
+   - Navigate to USB drive and select `ETL_Addin.xlam`
+   - Click OK
    - **Check the box** next to "ETL_Addin" to enable it
 
-3. **Verify Installation:**
+2. **Verify Installation:**
    - You should see the "Lab Tools" tab in the Excel ribbon (if using custom ribbon)
    - OR the macro should appear in the Quick Access Toolbar
-   - Click "Process Data" to test
 
-## Step 6: Create User Instructions
+**Step 6.3: Test the Installation**
 
-Save this as `USER_GUIDE.md` in your deployment folder:
+1. Open a raw data Excel file (or use a test file from USB)
+2. Look for the "Lab Tools" ribbon tab
+3. Click the "Process Data" button
+4. Verify that:
+   - Three new sheets appear: "QC", "Samples", "Reported Results"
+   - Out-of-bounds values are highlighted in red
+   - A completion message pop-up appears
 
-```markdown
+### Deployment Checklist
+
+Use this checklist to track deployment across multiple lab computers:
+
+```
+Computer Name: ____________  Date: __________
+[ ] Step 1: ETL_Processor.exe copied to %APPDATA%\ETL_Pipeline\
+[ ] Step 2: ETL_Addin.xlam installed via Add-ins Manager
+[ ] Step 3: "Lab Tools" ribbon tab visible (or macro in Quick Access Toolbar)
+[ ] Step 4: Tested with sample data file
+[ ] Step 5: Verified all three output sheets generate correctly
+[ ] Step 6: Confirmed conditional formatting (red highlights) works
+[ ] Step 7: Verified completion pop-up message appears
+
+Notes: _________________________________________________
+```
+
+## Troubleshooting
+
+### Common Installation Issues
+
+**Error: "Cannot run the macro..."**
+- Ensure `ETL_Processor.exe` is at: `%APPDATA%\ETL_Pipeline\ETL_Processor.exe`
+- Verify the path in the VBA macro matches this location
+- Check that the file copied correctly from USB (should be ~29MB)
+
+**Error: "ETL Processor not found"**
+- Open File Explorer and navigate to `%APPDATA%`
+- Verify the `ETL_Pipeline` folder exists
+- Verify `ETL_Processor.exe` is inside this folder
+- If missing, recopy from USB drive
+
+**Error: "Python script failed"**
+- Check `etl_error.log` in the same folder as `ETL_Processor.exe` (`%APPDATA%\ETL_Pipeline\`)
+- Verify the input data has the required columns: "Sample ID", "Sample Type", "Mean (per analysis type)", "PPM", "Adjusted ABS"
+- Ensure you're on the correct sheet before clicking "Process Data"
+
+**Ribbon button doesn't appear:**
+- Verify the add-in is enabled: File → Options → Add-ins
+- Look for "ETL_Addin" in the list and ensure it's checked
+- If using custom ribbon, restart Excel
+- If still missing, check that the VBA macro was properly added (Step 1)
+
+**Error: "No active Excel instance found"**
+- Make sure you have an Excel workbook open before clicking "Process Data"
+- The workbook must contain raw data in the active sheet
+
+**Add-in disappears after Excel restart:**
+- The `.xlam` file may have been moved or deleted
+- Reinstall the add-in following Step 6.2
+- Consider copying the `.xlam` file to a permanent location before installing
+
+### Common Usage Issues
+
+**No output sheets appear:**
+- Check that the active sheet contains the expected column names
+- Look for error messages in pop-ups
+- Check `etl_error.log` for detailed error information
+
+**Incorrect data in output sheets:**
+- Verify the input data format matches the expected structure
+- Check that Sample IDs are properly formatted
+- Ensure QC samples are named correctly (MDL, ICV, CCV, etc.)
+
+**Process runs but takes a long time:**
+- Large datasets may take 30-60 seconds to process
+- Do not close Excel or click other buttons while processing
+
+## Step 7: Create User Instructions
+
+Save this as `USER_GUIDE.txt` or print it for lab users:
+
+```
 # ETL Pipeline - User Guide
 
 ## How to Use
@@ -182,28 +293,25 @@ Save this as `USER_GUIDE.md` in your deployment folder:
 4. Click the "Process Data" button
 5. Wait a few seconds while the data is processed
 6. Three new sheets will appear:
-   - **QC** - Quality control samples with bounds checking
-   - **Samples** - Regular samples with RPD calculations
-   - **Reported Results** - Final results ready for reporting
+   - QC - Quality control samples with bounds checking
+   - Samples - Regular samples with RPD calculations
+   - Reported Results - Final results ready for reporting
 
 ## Color Coding
 
-- **Red text** = Value is out of acceptable bounds
+Red text = Value is out of acceptable bounds
   - MDL: Outside 45-145% recovery
   - ICV/CCV: Outside 90-110% recovery
   - RPD: Greater than 10%
 
-## Troubleshooting
+## If You See an Error
 
-**Error: "ETL Processor not found"**
-- Contact your lab manager - the software needs to be reinstalled
+Contact your lab manager if you encounter:
+- "ETL Processor not found"
+- "No active Excel instance found"
+- "Failed to extract data"
 
-**Error: "No active Excel instance found"**
-- Make sure you have an Excel file open before clicking "Process Data"
-
-**Error: "Failed to extract data"**
-- Verify your raw data file is in the correct format
-- Make sure you're on the correct sheet before processing
+Make sure you have the data sheet active before clicking "Process Data"
 ```
 
 ## Alternative: Portable Installation

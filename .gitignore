@@ -5,7 +5,7 @@ __pycache__/
 # Virtual environment
 .venv/
 
-# Data files (optional: ignore lab data)
+# Data files (lab data and test files)
 *.xlsx
 *.csv
 
@@ -22,7 +22,6 @@ dist/
 # Claude Code artifacts
 .claude/
 CLAUDE.md
-GEMINI.md
 
 
 
